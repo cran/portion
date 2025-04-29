@@ -8,32 +8,32 @@
 [![R-CMD-check](https://github.com/loelschlaeger/portion/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/loelschlaeger/portion/actions/workflows/R-CMD-check.yaml)
 [![CRAN
 status](https://www.r-pkg.org/badges/version/portion)](https://CRAN.R-project.org/package=portion)
+[![CRAN
+downloads](https://cranlogs.r-pkg.org/badges/grand-total/portion)](https://CRAN.R-project.org/package=portion)
 [![Codecov test
 coverage](https://codecov.io/gh/loelschlaeger/portion/branch/master/graph/badge.svg)](https://app.codecov.io/gh/loelschlaeger/portion?branch=master)
 <!-- badges: end -->
 
-`{portion}` is a small `R` package that helps to extract a data portion:
+The `{portion}` `R` package offers convenient tools to extract data
+portions from various objects:
 
 1.  works for `vector`, `matrix`, `data.frame`, and `list` objects
 
 2.  the relative portion size can be selected
 
-3.  allows to select first, last, random, similar or dissimilar data
-    points
+3.  allows to extract first, last, random, similar or dissimilar data
 
-4.  can portion either row- or column-wise
+4.  can portion row- and column-wise
+
+5.  provides selected indices as an attribute
 
 ## Installation
 
+You can install the released version from
+[CRAN](https://CRAN.R-project.org) with:
+
 ``` r
 install.packages("portion")
-```
-
-And the development version from [GitHub](https://github.com/) with:
-
-``` r
-# install.packages("devtools")
-devtools::install_github("loelschlaeger/portion")
 ```
 
 ## Example
@@ -41,26 +41,28 @@ devtools::install_github("loelschlaeger/portion")
 Can portion a `vector`:
 
 ``` r
-portion(c(1:5, 51:55), proportion = 0.5, how = "similar")
-#> [1] 1 2 3 4 5
+x <- c(1:4, 16:20)
+portion(x, proportion = 0.5, how = "similar")
+#> [1] 16 17 18 19 20
 #> attr(,"indices")
-#> [1] 1 2 3 4 5
-portion(1:10, proportion = 0.4, how = "dissimilar", centers = 4)
-#> [1] 1 3 5 8
+#> [1] 5 6 7 8 9
+portion(x, proportion = 0.4, how = "dissimilar")
+#> [1]  1  2 16 17
 #> attr(,"indices")
-#> [1] 1 3 5 8
+#> [1] 1 2 5 6
 ```
 
 Can portion a `matrix`:
 
 ``` r
-portion(matrix(LETTERS[1:24], nrow = 4), proportion = 0.5, how = "first")
+x <- matrix(LETTERS[1:24], nrow = 4)
+portion(x, proportion = 0.5, how = "first")
 #>      [,1] [,2] [,3] [,4] [,5] [,6]
 #> [1,] "A"  "E"  "I"  "M"  "Q"  "U" 
 #> [2,] "B"  "F"  "J"  "N"  "R"  "V" 
 #> attr(,"indices")
 #> [1] 1 2
-portion(matrix(LETTERS[1:24], nrow = 4), proportion = 0.5, how = "first", byrow = FALSE)
+portion(x, proportion = 0.5, how = "first", byrow = FALSE)
 #>      [,1] [,2] [,3]
 #> [1,] "A"  "E"  "I" 
 #> [2,] "B"  "F"  "J" 
@@ -73,16 +75,17 @@ portion(matrix(LETTERS[1:24], nrow = 4), proportion = 0.5, how = "first", byrow 
 Can portion a `data.frame`:
 
 ``` r
-portion(as.data.frame(diag(8)), proportion = 0.3, how = "random")
+x <- as.data.frame(diag(8))
+portion(x, proportion = 0.3, how = "random")
 #>   V1 V2 V3 V4 V5 V6 V7 V8
+#> 1  1  0  0  0  0  0  0  0
 #> 3  0  0  1  0  0  0  0  0
 #> 4  0  0  0  1  0  0  0  0
-#> 5  0  0  0  0  1  0  0  0
-portion(as.data.frame(diag(8)), proportion = 0.3, how = "random", byrow = FALSE)
-#>   V2 V4 V8
+portion(x, proportion = 0.3, how = "random", byrow = FALSE)
+#>   V3 V4 V8
 #> 1  0  0  0
-#> 2  1  0  0
-#> 3  0  0  0
+#> 2  0  0  0
+#> 3  1  0  0
 #> 4  0  1  0
 #> 5  0  0  0
 #> 6  0  0  0
@@ -93,7 +96,8 @@ portion(as.data.frame(diag(8)), proportion = 0.3, how = "random", byrow = FALSE)
 Can work on a `list`:
 
 ``` r
-portion(list(1:5, diag(3), data.frame(1:3, 2:4)), proportion = 0.5, how = "last")
+x <- list(1:5, diag(3), data.frame(1:3, 2:4))
+portion(x, proportion = 0.5, how = "last")
 #> [[1]]
 #> [1] 3 4 5
 #> attr(,"indices")

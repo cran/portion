@@ -3,53 +3,86 @@
 \name{portion}
 \alias{portion}
 \alias{portion.numeric}
+\alias{portion.character}
+\alias{portion.logical}
 \alias{portion.matrix}
 \alias{portion.data.frame}
 \alias{portion.list}
 \title{Extracting a data portion}
 \usage{
-portion(x, proportion, how, centers = 2, ...)
+portion(x, proportion, how = "random", centers = 2L, ...)
 
-\method{portion}{numeric}(x, proportion, how, centers = 2, ...)
+\method{portion}{numeric}(x, proportion, how = "random", centers = 2L, ...)
 
-\method{portion}{matrix}(x, proportion, how, centers = 2, byrow = TRUE, ignore = integer(), ...)
+\method{portion}{character}(x, proportion, how = "random", ...)
 
-\method{portion}{data.frame}(x, proportion, how, centers = 2, byrow = TRUE, ignore = integer(), ...)
+\method{portion}{logical}(x, proportion, how = "random", centers = 2L, ...)
 
-\method{portion}{list}(x, proportion, how, centers = 2, ...)
+\method{portion}{matrix}(
+  x,
+  proportion,
+  how = "random",
+  centers = 2L,
+  byrow = TRUE,
+  ignore = integer(),
+  ...
+)
+
+\method{portion}{data.frame}(
+  x,
+  proportion,
+  how = "random",
+  centers = 2L,
+  byrow = TRUE,
+  ignore = integer(),
+  ...
+)
+
+\method{portion}{list}(x, proportion, how = "random", centers = 2L, ...)
 }
 \arguments{
-\item{x}{an object to be portioned}
+\item{x}{An object to be portioned.}
 
-\item{proportion}{a \code{numeric} between 0 and 1, the relative portion size}
+\item{proportion}{[\code{numeric(1)}]\cr
+The relative portion size between \code{0} and \code{1} (rounded up).}
 
-\item{how}{a \code{character}, specifying the portion method, one of:
-- \code{"random"} (default), portion at random
-- \code{"first"}, portion to the first elements
-- \code{"last"}, portion to the last elements
-- \code{"similar"}, portion to similar elements based on clustering
-- \code{"dissimilar"}, portion to dissimilar elements based on clustering}
+\item{how}{[\code{character(1)}]\cr
+Specifying how to portion, one of:
+\itemize{
+\item \code{"random"} (default), portion at random
+\item \code{"first"}, portion to the first elements
+\item \code{"last"}, portion to the last elements
+\item \code{"similar"}, portion to similar elements
+\item \code{"dissimilar"}, portion to dissimilar elements
+}
 
-\item{centers}{(only relevant if \code{how} is \code{"similar} or \code{"dissimilar)})
-an \code{integer} (default is \code{2}), passed on to
-\code{\link[stats]{kmeans}}}
+Options \code{"similar"} and \code{"dissimilar"} are based on clustering via
+\code{\link[stats]{kmeans}} and hence are only available for numeric \code{x}.}
 
-\item{...}{further arguments to be passed to or from other methods}
+\item{centers}{[\code{integer(1)}]\cr
+Only relevant if \code{how = "similar"} or \verb{how = "dissimilar}.
 
-\item{byrow}{\code{TRUE} to portion row-wise (default) or \code{FALSE} to portion
-column-wise}
+In this case, passed on to \code{\link[stats]{kmeans}} for clustering.}
 
-\item{ignore}{(only relevant if \code{how} is \code{"similar} or \code{"dissimilar)})
-an \code{integer} vector of row indices (or column indices if
-\code{byrow = FALSE}) to ignore during clustering}
+\item{...}{Further arguments to be passed to or from other methods.}
+
+\item{byrow}{[\code{logical(1)}]\cr
+Only relevant if \code{x} has two dimensions (rows and columns).
+
+In this case, set to \code{TRUE} to portion row-wise (default) or \code{FALSE} to
+portion column-wise.}
+
+\item{ignore}{[\code{integer()}]\cr
+Only relevant if \code{how = "similar"} or \verb{how = "dissimilar}.
+
+In this case, row indices (or column indices if \code{byrow = FALSE}) to ignore
+during clustering.}
 }
 \value{
-the portioned input \code{x} with the (row, column) indices used
-added as attributes \code{"indices"}
+The portioned input \code{x} with (row, column) indices as attributes \code{"indices"}.
 }
 \description{
-extract a portion of data saved as a \code{vector}, \code{matrix},
-\code{data.frame}, or \code{list}
+Methods to extract portions of different objects.
 }
 \examples{
 # can portion vectors, matrices, data.frames, and lists of such types

@@ -3,12 +3,11 @@
 \docType{package}
 \name{portion-package}
 \alias{portion-package}
-\alias{_PACKAGE}
 \title{portion: Extracting a Data Portion}
 \description{
 \if{html}{\figure{logo.png}{options: style='float: right' alt='logo' width='120'}}
 
-Provides a simple method to extract portions of a vector, matrix, or data.frame. The relative portion size and the way the portion is selected can be chosen.
+Provides simple methods to extract portions of different objects. The relative portion size and the way the portion is selected can be chosen.
 }
 \seealso{
 Useful links:

@@ -1,4 +1,4 @@
-test_that("can portion vector", {
+test_that("can portion numeric vector", {
   x <- c(rep(1, 5), rep(3, 5))
   expect_error(
     portion(x),
@@ -9,12 +9,12 @@ test_that("can portion vector", {
     "please set 'proportion' to a numeric between 0 and 1"
   )
   expect_error(
-    portion(x, 0.5),
-    "please specify 'how'"
-  )
-  expect_error(
     portion(x, 0.5, "bad"),
     "'arg' should be one of"
+  )
+  expect_error(
+    portion.numeric(x, 0.5, "bad"),
+    "please use a valid method for 'how'"
   )
   expect_length(
     portion(x, 0.5, "random"),
@@ -33,13 +33,45 @@ test_that("can portion vector", {
     5
   )
   expect_length(
-    portion(x, 0.5, "dissimilar"),
+    portion(1:100, 0.9, "dissimilar", centers = 50),
+    90
+  )
+})
+
+test_that("can portion character vector", {
+  x <- LETTERS[1:10]
+  expect_error(
+    portion.character(x, 0.5, "bad"),
+    "please use a valid method for 'how'"
+  )
+  expect_length(
+    portion(x, 0.5, "random"),
+    5
+  )
+  expect_error(
+    portion(x, 0.5, "similar"),
+    "'x' must be numeric"
+  )
+})
+
+test_that("can portion logical vector", {
+  x <- sample(c(TRUE, FALSE), 10, replace = TRUE)
+  expect_error(
+    portion.character(x, 0.5, "bad"),
+    "please use a valid method for 'how'"
+  )
+  expect_length(
+    portion(x, 0.5, "similar"),
     5
   )
 })
 
 test_that("can portion matrix", {
   x <- matrix(1:24, nrow = 6)
+  expect_identical(
+    dim(portion(x, 0.5, "random")),
+    c(3L, 4L)
+  )
   expect_identical(
     dim(portion(x, 0.5, "random")),
     c(3L, 4L)
@@ -73,6 +105,10 @@ test_that("can portion matrix", {
     c(6L, 2L)
   )
   expect_identical(
+    dim(portion(x, 0.5, "similar", byrow = FALSE, ignore = 3:4)),
+    c(6L, 2L)
+  )
+  expect_identical(
     dim(portion(x, 0.5, "dissimilar")),
     c(3L, 4L)
   )
@@ -83,7 +119,7 @@ test_that("can portion matrix", {
 })
 
 test_that("can portion data.frame", {
-  x <- as.data.frame(matrix(1:24, nrow = 6))
+  x <- cbind(as.data.frame(matrix(1:18, nrow = 6)), LETTERS[1:6])
   colnames(x) <- LETTERS[1:4]
   attr(x, "test_attribute") <- "test_attribute_value"
   expect_identical(
@@ -97,7 +133,7 @@ test_that("can portion data.frame", {
   expect_equal(
     portion(x, 0.5, "first"),
     structure(
-      list(A = 1:3, B = 7:9, C = 13:15, D = 19:21),
+      list(A = 1:3, B = 7:9, C = 13:15, D = c("A", "B", "C")),
       test_attribute = "test_attribute_value",
       row.names = c(NA, 3L), class = "data.frame", indices = 1:3
     )
@@ -112,7 +148,7 @@ test_that("can portion data.frame", {
   expect_equal(
     portion(x, 0.5, "last"),
     structure(
-      list(A = 4:6, B = 10:12, C = 16:18, D = 22:24),
+      list(A = 4:6, B = 10:12, C = 16:18, D = c("D", "E", "F")),
       test_attribute = "test_attribute_value", row.names = 4:6,
       class = "data.frame", indices = 4:6
     )
@@ -120,25 +156,25 @@ test_that("can portion data.frame", {
   expect_equal(
     portion(x, 0.5, "last", byrow = FALSE),
     structure(
-      list(C = 13:18, D = 19:24), class = "data.frame",
+      list(C = 13:18, D = LETTERS[1:6]), class = "data.frame",
       row.names = c(NA, 6L), indices = 3:4
     )
   )
   expect_identical(
-    dim(portion(x, 0.5, "similar")),
+    dim(portion(x, 0.5, "similar", ignore = 4)),
     c(3L, 4L)
   )
   expect_identical(
-    dim(portion(x, 0.5, "similar", byrow = FALSE)),
+    dim(portion(x[, -4], 0.5, "similar", byrow = FALSE)),
     c(6L, 2L)
   )
   expect_identical(
-    dim(portion(x, 0.5, "dissimilar")),
-    c(3L, 4L)
+    dim(portion(x[, -4], 0.5, "dissimilar")),
+    c(3L, 3L)
   )
   expect_identical(
-    dim(portion(x, 0.5, "dissimilar", byrow = FALSE)),
-    c(6L, 2L)
+    dim(portion(x[, -4], 1/3, "dissimilar", byrow = FALSE, ignore = 4:6)),
+    c(6L, 1L)
   )
 })
 
@@ -156,3 +192,4 @@ test_that("can portion list", {
     )
   )
 })
+
