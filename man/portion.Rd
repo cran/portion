@@ -2,6 +2,7 @@
 % Please edit documentation in R/portion.R
 \name{portion}
 \alias{portion}
+\alias{portion.default}
 \alias{portion.numeric}
 \alias{portion.character}
 \alias{portion.logical}
@@ -11,6 +12,8 @@
 \title{Extracting a data portion}
 \usage{
 portion(x, proportion, how = "random", centers = 2L, ...)
+
+\method{portion}{default}(x, ...)
 
 \method{portion}{numeric}(x, proportion, how = "random", centers = 2L, ...)
 
@@ -50,7 +53,7 @@ The relative portion size between \code{0} and \code{1} (rounded up).}
 Specifying how to portion, one of:
 \itemize{
 \item \code{"random"} (default), portion at random
-\item \code{"first"}, portion to the first elements
+\item \code{"first"}, portion to the first elements.
 \item \code{"last"}, portion to the last elements
 \item \code{"similar"}, portion to similar elements
 \item \code{"dissimilar"}, portion to dissimilar elements
@@ -60,7 +63,7 @@ Options \code{"similar"} and \code{"dissimilar"} are based on clustering via
 \code{\link[stats]{kmeans}} and hence are only available for numeric \code{x}.}
 
 \item{centers}{[\code{integer(1)}]\cr
-Only relevant if \code{how = "similar"} or \verb{how = "dissimilar}.
+Only relevant if \code{how = "similar"} or \code{how = "dissimilar"}.
 
 In this case, passed on to \code{\link[stats]{kmeans}} for clustering.}
 
@@ -79,7 +82,8 @@ In this case, row indices (or column indices if \code{byrow = FALSE}) to ignore
 during clustering.}
 }
 \value{
-The portioned input \code{x} with (row, column) indices as attributes \code{"indices"}.
+The portioned input \code{x} with selected (row, column) indices as attributes
+\code{"indices"}.
 }
 \description{
 Methods to extract portions of different objects.
@@ -96,6 +100,13 @@ portion(
   how = "first"
 )
 
-# can portion similar elements
-portion(c(rep(1, 5), rep(2, 5)), proportion = 0.5, how = "similar")
+# can portion similar and dissimilar elements (based on kmeans clustering)
+x <- c(1, 1, 2, 2)
+portion(x, proportion = 0.5, how = "similar")
+portion(x, proportion = 0.5, how = "dissimilar")
+
+# object attributes are preserved
+x <- structure(1:10, "test_attribute" = "test")
+x[1:5]
+portion(x, proportion = 0.5, how = "first")
 }

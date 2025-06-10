@@ -2,6 +2,7 @@
 
 S3method(portion,character)
 S3method(portion,data.frame)
+S3method(portion,default)
 S3method(portion,list)
 S3method(portion,logical)
 S3method(portion,matrix)

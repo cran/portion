@@ -7,7 +7,7 @@
 \description{
 \if{html}{\figure{logo.png}{options: style='float: right' alt='logo' width='120'}}
 
-Provides simple methods to extract portions of different objects. The relative portion size and the way the portion is selected can be chosen.
+Provides simple methods to extract data portions from various objects. The relative portion size and the way the portion is selected can be chosen.
 }
 \seealso{
 Useful links:

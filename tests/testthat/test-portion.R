@@ -142,6 +142,7 @@ test_that("can portion data.frame", {
     portion(x, 0.5, "first", byrow = FALSE),
     structure(
       list(A = 1:6, B = 7:12), class = "data.frame",
+      test_attribute = "test_attribute_value",
       row.names = c(NA, 6L), indices = 1:2
     )
   )
@@ -157,6 +158,7 @@ test_that("can portion data.frame", {
     portion(x, 0.5, "last", byrow = FALSE),
     structure(
       list(C = 13:18, D = LETTERS[1:6]), class = "data.frame",
+      test_attribute = "test_attribute_value",
       row.names = c(NA, 6L), indices = 3:4
     )
   )
@@ -193,3 +195,17 @@ test_that("can portion list", {
   )
 })
 
+test_that("cannot portion everything", {
+  expect_error(
+    portion(mean, 0.5),
+    "no 'portion' method for class function"
+  )
+})
+
+test_that("allows and preserves attributes", {
+  x <- structure(1L:10L, "test_attribute" = "test")
+  expect_identical(
+    portion(x, 0.5, how = "first"),
+    structure(1:5, indices = 1:5, "test_attribute" = "test")
+  )
+})

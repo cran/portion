@@ -1,7 +1,7 @@
 Package: portion
 Type: Package
 Title: Extracting a Data Portion
-Version: 0.1.1
+Version: 0.1.2
 Authors@R: person("Lennart", "Oelschl\u00e4ger", email = "oelschlaeger.lennart@gmail.com", role = c("aut", "cre"))
 Description: Provides simple methods to extract data portions from various objects. 
     The relative portion size and the way the portion is selected can be chosen.
@@ -14,8 +14,8 @@ Imports: stats
 URL: https://github.com/loelschlaeger/portion
 BugReports: https://github.com/loelschlaeger/portion/issues
 NeedsCompilation: no
-Packaged: 2025-04-29 16:40:14 UTC; Lennart Oelschläger
+Packaged: 2025-06-10 16:29:13 UTC; Lennart Oelschläger
 Author: Lennart Oelschläger [aut, cre]
 Maintainer: Lennart Oelschläger <oelschlaeger.lennart@gmail.com>
 Repository: CRAN
-Date/Publication: 2025-04-29 17:10:02 UTC
+Date/Publication: 2025-06-10 16:40:02 UTC

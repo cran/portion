@@ -27,6 +27,8 @@ portions from various objects:
 
 5.  provides selected indices as an attribute
 
+6.  preserves object attributes
+
 ## Installation
 
 You can install the released version from
@@ -41,15 +43,15 @@ install.packages("portion")
 Can portion a `vector`:
 
 ``` r
-x <- c(1:4, 16:20)
+x <- c(1, 1, 2, 2)
 portion(x, proportion = 0.5, how = "similar")
-#> [1] 16 17 18 19 20
+#> [1] 1 1
 #> attr(,"indices")
-#> [1] 5 6 7 8 9
-portion(x, proportion = 0.4, how = "dissimilar")
-#> [1]  1  2 16 17
+#> [1] 1 2
+portion(x, proportion = 0.5, how = "dissimilar")
+#> [1] 1 2
 #> attr(,"indices")
-#> [1] 1 2 5 6
+#> [1] 1 3
 ```
 
 Can portion a `matrix`:
@@ -80,17 +82,17 @@ portion(x, proportion = 0.3, how = "random")
 #>   V1 V2 V3 V4 V5 V6 V7 V8
 #> 1  1  0  0  0  0  0  0  0
 #> 3  0  0  1  0  0  0  0  0
-#> 4  0  0  0  1  0  0  0  0
+#> 7  0  0  0  0  0  0  1  0
 portion(x, proportion = 0.3, how = "random", byrow = FALSE)
-#>   V3 V4 V8
-#> 1  0  0  0
-#> 2  0  0  0
-#> 3  1  0  0
-#> 4  0  1  0
-#> 5  0  0  0
+#>   V1 V2 V5
+#> 1  1  0  0
+#> 2  0  1  0
+#> 3  0  0  0
+#> 4  0  0  0
+#> 5  0  0  1
 #> 6  0  0  0
 #> 7  0  0  0
-#> 8  0  0  1
+#> 8  0  0  0
 ```
 
 Can work on a `list`:
