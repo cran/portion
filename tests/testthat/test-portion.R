@@ -2,19 +2,23 @@ test_that("can portion numeric vector", {
   x <- c(rep(1, 5), rep(3, 5))
   expect_error(
     portion(x),
-    "please specify 'proportion'"
+    "Please provide `proportion`"
   )
   expect_error(
     portion(x, 2),
-    "please set 'proportion' to a numeric between 0 and 1"
+    "`proportion` must be a single finite number between 0 and 1"
   )
   expect_error(
     portion(x, 0.5, "bad"),
-    "'arg' should be one of"
+    "`how` must be one of"
   )
   expect_error(
     portion.numeric(x, 0.5, "bad"),
-    "please use a valid method for 'how'"
+    "`how` must be one of"
+  )
+  expect_error(
+    portion(x, 0.5, "r"),
+    "`how` must be one of"
   )
   expect_length(
     portion(x, 0.5, "random"),
@@ -36,13 +40,25 @@ test_that("can portion numeric vector", {
     portion(1:100, 0.9, "dissimilar", centers = 50),
     90
   )
+  expect_equal(
+    portion(1:10, 0, "similar"),
+    structure(integer(), indices = integer())
+  )
+  expect_error(
+    portion(c(1, NA), 0.5, "similar"),
+    "without `NA`, `NaN`, or infinite values"
+  )
+  expect_error(
+    portion(x, 0.5, "similar", centers = 0),
+    "`centers` must be a single positive whole number"
+  )
 })
 
 test_that("can portion character vector", {
   x <- LETTERS[1:10]
   expect_error(
     portion.character(x, 0.5, "bad"),
-    "please use a valid method for 'how'"
+    "`how` must be one of"
   )
   expect_length(
     portion(x, 0.5, "random"),
@@ -50,19 +66,23 @@ test_that("can portion character vector", {
   )
   expect_error(
     portion(x, 0.5, "similar"),
-    "'x' must be numeric"
+    "require numeric `x`"
   )
 })
 
 test_that("can portion logical vector", {
-  x <- sample(c(TRUE, FALSE), 10, replace = TRUE)
+  x <- rep(c(TRUE, FALSE), 5)
   expect_error(
-    portion.character(x, 0.5, "bad"),
-    "please use a valid method for 'how'"
+    portion.logical(x, 0.5, "bad"),
+    "`how` must be one of"
   )
   expect_length(
     portion(x, 0.5, "similar"),
     5
+  )
+  expect_error(
+    portion(c(TRUE, NA), 0.5, "similar"),
+    "without `NA`, `NaN`, or infinite values"
   )
 })
 
@@ -115,6 +135,30 @@ test_that("can portion matrix", {
   expect_identical(
     dim(portion(x, 0.5, "dissimilar", byrow = FALSE)),
     c(6L, 2L)
+  )
+  expect_equal(
+    portion(matrix(1, nrow = 3, ncol = 2), 0.5, "similar"),
+    structure(matrix(1, nrow = 2, ncol = 2), indices = 1:2)
+  )
+  expect_identical(
+    dim(portion(x, 0, "similar")),
+    c(0L, 4L)
+  )
+  expect_error(
+    portion(x, 0.5, byrow = NA),
+    "`byrow` must be either `TRUE` or `FALSE`"
+  )
+  expect_error(
+    portion(x, 0.5, "similar", ignore = 5),
+    "`ignore` must contain whole-number column indices"
+  )
+  expect_error(
+    portion(x, 0.5, "similar", ignore = 1:4),
+    "at least one non-ignored variable"
+  )
+  expect_error(
+    portion(matrix(c(1, NA, 2, 3), nrow = 2), 0.5, "similar"),
+    "without `NA`, `NaN`, or infinite values"
   )
 })
 
@@ -178,6 +222,22 @@ test_that("can portion data.frame", {
     dim(portion(x[, -4], 1/3, "dissimilar", byrow = FALSE, ignore = 4:6)),
     c(6L, 1L)
   )
+  expect_error(
+    portion(x, 0.5, "similar"),
+    "all non-ignored columns must be numeric"
+  )
+  expect_identical(
+    dim(portion(x, 0, "similar")),
+    c(0L, 4L)
+  )
+  expect_error(
+    portion(x, 0.5, "similar", ignore = 5),
+    "`ignore` must contain whole-number column indices"
+  )
+  expect_error(
+    portion(x, 0.5, "similar", ignore = 1:4),
+    "at least one non-ignored variable"
+  )
 })
 
 test_that("can portion list", {
@@ -198,7 +258,7 @@ test_that("can portion list", {
 test_that("cannot portion everything", {
   expect_error(
     portion(mean, 0.5),
-    "no 'portion' method for class function"
+    "No `portion\\(\\)` method is available"
   )
 })
 
@@ -207,5 +267,56 @@ test_that("allows and preserves attributes", {
   expect_identical(
     portion(x, 0.5, how = "first"),
     structure(1:5, indices = 1:5, "test_attribute" = "test")
+  )
+})
+
+test_that("edge cases are validated", {
+  expect_identical(
+    dim(portion(matrix(1:6, nrow = 2), 0, "similar", byrow = FALSE)),
+    c(2L, 0L)
+  )
+  expect_identical(
+    dim(portion(data.frame(a = 1:3, b = 4:6), 0, "similar", byrow = FALSE)),
+    c(3L, 0L)
+  )
+  expect_error(
+    portion.list(1, 0.5),
+    "`x` must be a list"
+  )
+  expect_error(
+    portion.numeric(list(1), 0.5),
+    "`x` must be an atomic vector"
+  )
+  expect_error(
+    portion.numeric(matrix(1), 0.5),
+    "`x` must be one-dimensional"
+  )
+  expect_error(
+    portion.matrix(1:3, 0.5),
+    "`x` must be a matrix"
+  )
+  expect_error(
+    portion.data.frame(matrix(1), 0.5),
+    "`x` must be a data frame"
+  )
+  expect_identical(
+    dim(portion(matrix(1:6, nrow = 3), 0.5, "similar", ignore = NULL)),
+    c(2L, 2L)
+  )
+  expect_identical(
+    portion:::.select_indices(5L, 0L, "first"),
+    integer()
+  )
+  expect_error(
+    portion:::.build_cluster(matrix(numeric(), nrow = 0, ncol = 1), 1),
+    "at least one row"
+  )
+  expect_error(
+    portion:::.build_cluster(numeric(), 1),
+    "at least one value"
+  )
+  expect_error(
+    portion:::.build_cluster("a", 1),
+    "require numeric data"
   )
 })

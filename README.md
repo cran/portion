@@ -15,13 +15,13 @@ coverage](https://codecov.io/gh/loelschlaeger/portion/branch/master/graph/badge.
 <!-- badges: end -->
 
 The `{portion}` `R` package offers convenient tools to extract data
-portions from various objects:
+portions from common R objects:
 
 1.  works for `vector`, `matrix`, `data.frame`, and `list` objects
 
 2.  the relative portion size can be selected
 
-3.  allows to extract first, last, random, similar or dissimilar data
+3.  allows extracting first, last, random, similar, or dissimilar data
 
 4.  can portion row- and column-wise
 
@@ -38,11 +38,12 @@ You can install the released version from
 install.packages("portion")
 ```
 
-## Example
+## Examples
 
-Can portion a `vector`:
+Portion a `vector` by selecting similar or dissimilar values:
 
 ``` r
+set.seed(1)
 x <- c(1, 1, 2, 2)
 portion(x, proportion = 0.5, how = "similar")
 #> [1] 1 1
@@ -54,7 +55,7 @@ portion(x, proportion = 0.5, how = "dissimilar")
 #> [1] 1 3
 ```
 
-Can portion a `matrix`:
+Portion a `matrix` row-wise or column-wise:
 
 ``` r
 x <- matrix(LETTERS[1:24], nrow = 4)
@@ -74,20 +75,22 @@ portion(x, proportion = 0.5, how = "first", byrow = FALSE)
 #> [1] 1 2 3
 ```
 
-Can portion a `data.frame`:
+Portion a `data.frame` at random. The selected row or column indices are
+stored in the `"indices"` attribute.
 
 ``` r
+set.seed(1)
 x <- as.data.frame(diag(8))
 portion(x, proportion = 0.3, how = "random")
 #>   V1 V2 V3 V4 V5 V6 V7 V8
 #> 1  1  0  0  0  0  0  0  0
-#> 3  0  0  1  0  0  0  0  0
-#> 7  0  0  0  0  0  0  1  0
+#> 4  0  0  0  1  0  0  0  0
+#> 8  0  0  0  0  0  0  0  1
 portion(x, proportion = 0.3, how = "random", byrow = FALSE)
-#>   V1 V2 V5
-#> 1  1  0  0
-#> 2  0  1  0
-#> 3  0  0  0
+#>   V2 V3 V5
+#> 1  0  0  0
+#> 2  1  0  0
+#> 3  0  1  0
 #> 4  0  0  0
 #> 5  0  0  1
 #> 6  0  0  0
@@ -95,7 +98,20 @@ portion(x, proportion = 0.3, how = "random", byrow = FALSE)
 #> 8  0  0  0
 ```
 
-Can work on a `list`:
+For clustering data frame rows, all non-ignored columns must be numeric
+or logical. Use `ignore` to exclude identifiers, labels, or grouping
+columns from the clustering data while keeping them in the returned
+object.
+
+``` r
+x <- data.frame(value = c(1, 1, 5, 5), group = c("a", "a", "b", "b"))
+portion(x, proportion = 0.5, how = "similar", ignore = 2)
+#>   value group
+#> 1     1     a
+#> 2     1     a
+```
+
+Portion each element of a `list`:
 
 ``` r
 x <- list(1:5, diag(3), data.frame(1:3, 2:4))

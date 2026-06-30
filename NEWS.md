@@ -1,3 +1,7 @@
+# portion 0.1.3
+
+* Improved input validation and error messages.
+
 # portion 0.1.2
 
 * Object attributes are preserved.

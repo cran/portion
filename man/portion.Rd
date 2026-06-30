@@ -9,7 +9,7 @@
 \alias{portion.matrix}
 \alias{portion.data.frame}
 \alias{portion.list}
-\title{Extracting a data portion}
+\title{Extract a data portion}
 \usage{
 portion(x, proportion, how = "random", centers = 2L, ...)
 
@@ -47,25 +47,28 @@ portion(x, proportion, how = "random", centers = 2L, ...)
 \item{x}{An object to be portioned.}
 
 \item{proportion}{[\code{numeric(1)}]\cr
-The relative portion size between \code{0} and \code{1} (rounded up).}
+The relative portion size as a number between \code{0} and \code{1}.
+
+The absolute size is rounded up with \code{ceiling()}.}
 
 \item{how}{[\code{character(1)}]\cr
-Specifying how to portion, one of:
+Exactly one of:
 \itemize{
-\item \code{"random"} (default), portion at random
-\item \code{"first"}, portion to the first elements.
-\item \code{"last"}, portion to the last elements
-\item \code{"similar"}, portion to similar elements
-\item \code{"dissimilar"}, portion to dissimilar elements
+\item \code{"random"} (default), select at random
+\item \code{"first"}, select the first elements, rows, or columns
+\item \code{"last"}, select the last elements, rows, or columns
+\item \code{"similar"}, select similar elements, rows, or columns
+\item \code{"dissimilar"}, select dissimilar elements, rows, or columns
 }
 
 Options \code{"similar"} and \code{"dissimilar"} are based on clustering via
-\code{\link[stats]{kmeans}} and hence are only available for numeric \code{x}.}
+\code{\link[stats]{kmeans}} and require numeric clustering data without
+\code{NA}, \code{NaN}, or infinite values.}
 
 \item{centers}{[\code{integer(1)}]\cr
-Only relevant if \code{how = "similar"} or \code{how = "dissimilar"}.
-
-In this case, passed on to \code{\link[stats]{kmeans}} for clustering.}
+Only relevant if \code{how = "similar"} or \code{how = "dissimilar"}. A positive whole
+number passed to \code{\link[stats]{kmeans}} for clustering. If \code{centers}
+exceeds the number of distinct values or rows, it is reduced automatically.}
 
 \item{...}{Further arguments to be passed to or from other methods.}
 
@@ -76,17 +79,23 @@ In this case, set to \code{TRUE} to portion row-wise (default) or \code{FALSE} t
 portion column-wise.}
 
 \item{ignore}{[\code{integer()}]\cr
-Only relevant if \code{how = "similar"} or \verb{how = "dissimilar}.
+Only relevant for two-dimensional \code{x} and \code{how = "similar"} or
+\code{how = "dissimilar"}.
 
-In this case, row indices (or column indices if \code{byrow = FALSE}) to ignore
-during clustering.}
+Indices to exclude from the clustering data, but not from the returned
+object. With \code{byrow = TRUE}, these are column indices. With \code{byrow = FALSE},
+these are row indices. This is useful, for example, to ignore identifier or
+non-numeric columns while selecting similar rows.}
 }
 \value{
-The portioned input \code{x} with selected (row, column) indices as attributes
-\code{"indices"}.
+A portion of \code{x}, preserving attributes where possible. Vectors return
+selected elements, matrices and data frames return selected rows or columns,
+and lists return a list with each element portioned. The selected indices are
+stored in the \code{"indices"} attribute of each returned object.
 }
 \description{
-Methods to extract portions of different objects.
+Extract a relative portion from vectors, matrices, data frames, or lists of
+these objects.
 }
 \examples{
 # can portion vectors, matrices, data.frames, and lists of such types
@@ -101,9 +110,14 @@ portion(
 )
 
 # can portion similar and dissimilar elements (based on kmeans clustering)
+set.seed(1)
 x <- c(1, 1, 2, 2)
 portion(x, proportion = 0.5, how = "similar")
 portion(x, proportion = 0.5, how = "dissimilar")
+
+# ignore non-numeric columns when clustering data frame rows
+x <- data.frame(value = c(1, 1, 5, 5), group = c("a", "a", "b", "b"))
+portion(x, proportion = 0.5, how = "similar", ignore = 2)
 
 # object attributes are preserved
 x <- structure(1:10, "test_attribute" = "test")
