@@ -1,8 +1,31 @@
 #' Extract a data portion
 #'
 #' @description
-#' Extract a relative portion from vectors, matrices, data frames, or lists of
-#' these objects.
+#' Extract a relative portion from vectors, matrices, data frames, time series,
+#' or lists of these objects.
+#'
+#' @details
+#' A portion of a vector consists of some of its elements, while a portion of a
+#' matrix or data frame consists of some of its rows (or columns if
+#' `byrow = FALSE`). The selected elements, rows, or columns keep their
+#' original order. For a list, each element is portioned separately, such that
+#' the selected indices can differ between the elements of the list.
+#'
+#' # Similar and dissimilar elements
+#' Options `how = "similar"` and `how = "dissimilar"` are based on clustering
+#' the elements, rows, or columns via \code{\link[stats]{kmeans}}, which
+#' requires numeric or logical data without `NA`, `NaN`, or infinite values.
+#' Note that the clustering starts from randomly chosen centers, hence the
+#' result depends on the state of the random number generator (see
+#' \code{\link[base]{set.seed}}).
+#'
+#' Based on the clustering, the portion is selected as follows:
+#'
+#' - For similar elements, the portion is filled cluster by cluster, starting
+#'   with the largest cluster, such that it contains as few clusters as
+#'   possible.
+#' - For dissimilar elements, one element of each cluster is selected in turn
+#'   until the portion is complete.
 #'
 #' @param x
 #' An object to be portioned.
@@ -10,7 +33,9 @@
 #' @param proportion \[`numeric(1)`\]\cr
 #' The relative portion size as a number between `0` and `1`.
 #'
-#' The absolute size is rounded up with `ceiling()`.
+#' The absolute size is the product of `proportion` and the number of elements,
+#' rows, or columns, rounded up to a whole number (e.g., a proportion of `0.5`
+#' selects three of five elements).
 #'
 #' @param how \[`character(1)`\]\cr
 #' Exactly one of:
@@ -21,14 +46,13 @@
 #' - `"similar"`, select similar elements, rows, or columns
 #' - `"dissimilar"`, select dissimilar elements, rows, or columns
 #'
-#' Options `"similar"` and `"dissimilar"` are based on clustering via
-#' \code{\link[stats]{kmeans}} and require numeric clustering data without
-#' `NA`, `NaN`, or infinite values.
+#' Options `"similar"` and `"dissimilar"` are based on clustering, see details.
 #'
 #' @param centers \[`integer(1)`\]\cr
 #' Only relevant if `how = "similar"` or `how = "dissimilar"`. A positive whole
-#' number passed to \code{\link[stats]{kmeans}} for clustering. If `centers`
-#' exceeds the number of distinct values or rows, it is reduced automatically.
+#' number passed to \code{\link[stats]{kmeans}} for clustering (the number of
+#' clusters). If `centers` exceeds the number of distinct values or rows, it is
+#' reduced automatically.
 #'
 #' @param byrow \[`logical(1)`\]\cr
 #' Only relevant if `x` has two dimensions (rows and columns).
@@ -82,6 +106,9 @@
 #' x <- structure(1:10, "test_attribute" = "test")
 #' x[1:5]
 #' portion(x, proportion = 0.5, how = "first")
+#'
+#' # can portion time series
+#' portion(stats::ts(1:8, start = 2000), proportion = 0.5, how = "first")
 
 portion <- function(x, proportion, how = "random", centers = 2L, ...) {
   if (missing(proportion)) {
@@ -122,7 +149,7 @@ portion.numeric <- function(x, proportion, how = "random", centers = 2L, ...) {
     return(structure(.extract_keep_attr(x, ind), "indices" = ind))
   }
   if (how %in% c("similar", "dissimilar")) {
-    clust <- .build_cluster(x, centers)
+    clust <- .build_cluster(as.vector(x), centers)
     ind <- .cluster_indices(clust, m, similar = how == "similar")
   } else {
     ind <- .select_indices(n, m, how)
@@ -133,9 +160,40 @@ portion.numeric <- function(x, proportion, how = "random", centers = 2L, ...) {
 #' @export
 #' @rdname portion
 
+portion.ts <- function(
+    x, proportion, how = "random", centers = 2L, byrow = TRUE, ...
+) {
+  values <- unclass(x)
+  attr(values, "tsp") <- NULL
+  out <- portion(
+    values, proportion = proportion, how = how, centers = centers,
+    byrow = byrow, ...
+  )
+  ind <- attr(out, "indices")
+  if (length(ind) == 0L) {
+    return(out)
+  }
+  if (is.matrix(values) && isFALSE(byrow)) {
+    first_time_point <- 1L
+  } else if (all(diff(ind) == 1L)) {
+    first_time_point <- ind[1L]
+  } else {
+    return(out)
+  }
+  structure(
+    stats::ts(
+      out,
+      start = stats::time(x)[first_time_point],
+      frequency = stats::frequency(x)
+    ),
+    "indices" = ind
+  )
+}
+
+#' @export
+#' @rdname portion
+
 portion.character <- function(x, proportion, how = "random", ...) {
-  .validate_vector(x)
-  .validate_proportion(proportion)
   how <- .validate_how(how)
   switch(
     how,
@@ -154,13 +212,7 @@ portion.character <- function(x, proportion, how = "random", ...) {
 #' @rdname portion
 
 portion.logical <- function(x, proportion, how = "random", centers = 2L, ...) {
-  .validate_vector(x)
-  .validate_proportion(proportion)
-  how <- .validate_how(how)
-  x <- portion.numeric(
-    as.numeric(x), proportion = proportion, how = how, centers = centers, ...
-  )
-  `attributes<-`(as.logical(x), attributes(x))
+  portion.numeric(x, proportion = proportion, how = how, centers = centers, ...)
 }
 
 #' @export
@@ -186,6 +238,7 @@ portion.matrix <- function(
     return(structure(x, "indices" = ind))
   }
   if (how %in% c("similar", "dissimilar")) {
+    centers <- .validate_centers(centers)
     x_select <- if (byrow) x else t(x)
     ignore <- .validate_ignore(
       ignore,
@@ -193,7 +246,7 @@ portion.matrix <- function(
       if (byrow) "column" else "row"
     )
     if (length(ignore) > 0) {
-      x_select <- .extract_keep_attr(x_select, , -ignore)
+      x_select <- x_select[, -ignore, drop = FALSE]
     }
     cluster <- .build_cluster(x_select, centers)
     ind <- .cluster_indices(cluster, m, similar = (how == "similar"))
@@ -229,6 +282,7 @@ portion.data.frame <- function(
     return(structure(.extract_keep_attr(x, , ind), "indices" = ind))
   }
   if (how %in% c("similar", "dissimilar")) {
+    centers <- .validate_centers(centers)
     x_select <- x
     ignore <- .validate_ignore(
       ignore,
@@ -237,12 +291,12 @@ portion.data.frame <- function(
     )
     if (length(ignore) > 0) {
       x_select <- if (byrow) {
-        .extract_keep_attr(x_select, , -ignore)
+        x_select[, -ignore, drop = FALSE]
       } else {
-        .extract_keep_attr(x_select, -ignore, )
+        x_select[-ignore, , drop = FALSE]
       }
     }
-    .validate_data_frame_cluster(x_select)
+    .validate_data_frame_cluster(x_select, byrow)
     x_select <- as.matrix(x_select)
     if (!byrow) {
       x_select <- t(x_select)
@@ -268,7 +322,23 @@ portion.list <- function(x, proportion, how = "random", centers = 2L, ...) {
   }
   .validate_proportion(proportion)
   .validate_how(how)
-  lapply(x, portion, proportion = proportion, how = how, centers = centers, ...)
+  x[] <- lapply(seq_along(x), function(i) {
+    tryCatch(
+      portion(
+        x[[i]], proportion = proportion, how = how, centers = centers, ...
+      ),
+      error = function(e) {
+        stop(
+          sprintf(
+            "Element %s of the list cannot be portioned: %s",
+            i, conditionMessage(e)
+          ),
+          call. = FALSE
+        )
+      }
+    )
+  })
+  x
 }
 
 .validate_proportion <- function(proportion) {
@@ -310,9 +380,15 @@ portion.list <- function(x, proportion, how = "random", centers = 2L, ...) {
   if (!is.atomic(x)) {
     stop("`x` must be an atomic vector.", call. = FALSE)
   }
-  if (!is.null(dim(x))) {
+  if (length(dim(x)) > 1L) {
     stop(
-      "`x` must be one-dimensional. Use a matrix method for matrices.",
+      sprintf(
+        paste0(
+          "`x` must be one-dimensional or a matrix, ",
+          "but it is an array with %s dimensions."
+        ),
+        length(dim(x))
+      ),
       call. = FALSE
     )
   }
@@ -380,7 +456,7 @@ portion.list <- function(x, proportion, how = "random", centers = 2L, ...) {
   unique(as.integer(ignore))
 }
 
-.validate_data_frame_cluster <- function(x) {
+.validate_data_frame_cluster <- function(x, byrow) {
   if (ncol(x) == 0L) {
     stop(
       "Clustering requires at least one non-ignored variable.",
@@ -392,9 +468,26 @@ portion.list <- function(x, proportion, how = "random", centers = 2L, ...) {
     function(col) is.numeric(col) || is.logical(col),
     logical(1)
   )
-  if (!all(numeric_columns)) {
+  if (byrow && !all(numeric_columns)) {
     stop(
-      "For data frame clustering, all non-ignored columns must be numeric.",
+      paste0(
+        "For data frame clustering, all non-ignored columns must be numeric ",
+        "or logical."
+      ),
+      call. = FALSE
+    )
+  }
+  vector_columns <- vapply(
+    x,
+    function(col) is.null(dim(col)),
+    logical(1)
+  )
+  if (!byrow && !all(numeric_columns & vector_columns)) {
+    stop(
+      paste0(
+        "For clustering the columns of a data frame, all columns must be ",
+        "numeric or logical vectors."
+      ),
       call. = FALSE
     )
   }
@@ -402,7 +495,8 @@ portion.list <- function(x, proportion, how = "random", centers = 2L, ...) {
 }
 
 .portion_size <- function(n, proportion) {
-  as.integer(ceiling(n * proportion))
+  tolerance <- 1e-12
+  as.integer(ceiling(n * proportion * (1 - tolerance)))
 }
 
 .select_indices <- function(n, m, how) {
@@ -429,14 +523,12 @@ portion.list <- function(x, proportion, how = "random", centers = 2L, ...) {
         call. = FALSE
       )
     }
-    centers <- min(centers, nrow(unique(x)))
   } else {
     if (length(x) == 0L) {
       stop("Clustering requires at least one value.", call. = FALSE)
     }
-    centers <- min(centers, length(unique(x)))
   }
-  if (!is.numeric(x)) {
+  if (!is.numeric(x) && !is.logical(x)) {
     stop(
       "`how = \"similar\"` and `how = \"dissimilar\"` require numeric data.",
       call. = FALSE
@@ -448,31 +540,25 @@ portion.list <- function(x, proportion, how = "random", centers = 2L, ...) {
       call. = FALSE
     )
   }
-  stats::kmeans(x, centers = centers)$cluster
+  points <- if (is.matrix(x)) x else matrix(x, ncol = 1L)
+  storage.mode(points) <- "double"
+  centers <- min(centers, nrow(unique(points)))
+  if (centers > 1L && centers == nrow(points)) {
+    return(seq_len(nrow(points)))
+  }
+  unname(stats::kmeans(points, centers = centers)$cluster)
 }
 
 .cluster_indices <- function(cluster, m, similar = TRUE) {
-  c <- length(unique(cluster))
-  ind <- integer(0)
+  ind_cluster <- split(seq_along(cluster), cluster)
   if (similar) {
-    i <- 1
-    while (length(ind) < m && i <= c) {
-      ind_i <- which(cluster == i)
-      ind <- c(ind, ind_i[seq_len(min(m - length(ind), length(ind_i)))])
-      i <- i + 1
-    }
+    ind_cluster <- ind_cluster[order(-lengths(ind_cluster))]
+    ind <- unlist(ind_cluster, use.names = FALSE)
   } else {
-    ind_cluster <- split(seq_along(cluster), cluster)
-    i <- 0
-    while (length(ind) < m) {
-      i_mod <- i %% c + 1
-      i <- i + 1
-      if (length(ind_cluster[[i_mod]]) == 0) next
-      ind <- c(ind, ind_cluster[[i_mod]][1])
-      ind_cluster[[i_mod]] <- ind_cluster[[i_mod]][-1]
-    }
+    position_in_cluster <- sequence(lengths(ind_cluster))
+    ind <- unlist(ind_cluster, use.names = FALSE)[order(position_in_cluster)]
   }
-  sort(ind)
+  sort(ind[seq_len(m)])
 }
 
 .extract_keep_attr <- function(x, ...) {

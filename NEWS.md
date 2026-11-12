@@ -1,3 +1,13 @@
+# portion 0.2.0
+
+* Added method for time series (class `ts`), which are portioned over time. 
+
+* Logical vectors now preserve their names and other attributes.
+
+* One-dimensional arrays are now portioned like vectors.
+
+* Lists now preserve their attributes.
+
 # portion 0.1.3
 
 * Improved input validation and error messages.

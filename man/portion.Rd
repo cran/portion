@@ -4,6 +4,7 @@
 \alias{portion}
 \alias{portion.default}
 \alias{portion.numeric}
+\alias{portion.ts}
 \alias{portion.character}
 \alias{portion.logical}
 \alias{portion.matrix}
@@ -16,6 +17,8 @@ portion(x, proportion, how = "random", centers = 2L, ...)
 \method{portion}{default}(x, ...)
 
 \method{portion}{numeric}(x, proportion, how = "random", centers = 2L, ...)
+
+\method{portion}{ts}(x, proportion, how = "random", centers = 2L, byrow = TRUE, ...)
 
 \method{portion}{character}(x, proportion, how = "random", ...)
 
@@ -49,7 +52,9 @@ portion(x, proportion, how = "random", centers = 2L, ...)
 \item{proportion}{[\code{numeric(1)}]\cr
 The relative portion size as a number between \code{0} and \code{1}.
 
-The absolute size is rounded up with \code{ceiling()}.}
+The absolute size is the product of \code{proportion} and the number of elements,
+rows, or columns, rounded up to a whole number (e.g., a proportion of \code{0.5}
+selects three of five elements).}
 
 \item{how}{[\code{character(1)}]\cr
 Exactly one of:
@@ -61,14 +66,13 @@ Exactly one of:
 \item \code{"dissimilar"}, select dissimilar elements, rows, or columns
 }
 
-Options \code{"similar"} and \code{"dissimilar"} are based on clustering via
-\code{\link[stats]{kmeans}} and require numeric clustering data without
-\code{NA}, \code{NaN}, or infinite values.}
+Options \code{"similar"} and \code{"dissimilar"} are based on clustering, see details.}
 
 \item{centers}{[\code{integer(1)}]\cr
 Only relevant if \code{how = "similar"} or \code{how = "dissimilar"}. A positive whole
-number passed to \code{\link[stats]{kmeans}} for clustering. If \code{centers}
-exceeds the number of distinct values or rows, it is reduced automatically.}
+number passed to \code{\link[stats]{kmeans}} for clustering (the number of
+clusters). If \code{centers} exceeds the number of distinct values or rows, it is
+reduced automatically.}
 
 \item{...}{Further arguments to be passed to or from other methods.}
 
@@ -94,9 +98,34 @@ and lists return a list with each element portioned. The selected indices are
 stored in the \code{"indices"} attribute of each returned object.
 }
 \description{
-Extract a relative portion from vectors, matrices, data frames, or lists of
-these objects.
+Extract a relative portion from vectors, matrices, data frames, time series,
+or lists of these objects.
 }
+\details{
+A portion of a vector consists of some of its elements, while a portion of a
+matrix or data frame consists of some of its rows (or columns if
+\code{byrow = FALSE}). The selected elements, rows, or columns keep their
+original order. For a list, each element is portioned separately, such that
+the selected indices can differ between the elements of the list.
+}
+\section{Similar and dissimilar elements}{
+Options \code{how = "similar"} and \code{how = "dissimilar"} are based on clustering
+the elements, rows, or columns via \code{\link[stats]{kmeans}}, which
+requires numeric or logical data without \code{NA}, \code{NaN}, or infinite values.
+Note that the clustering starts from randomly chosen centers, hence the
+result depends on the state of the random number generator (see
+\code{\link[base]{set.seed}}).
+
+Based on the clustering, the portion is selected as follows:
+\itemize{
+\item For similar elements, the portion is filled cluster by cluster, starting
+with the largest cluster, such that it contains as few clusters as
+possible.
+\item For dissimilar elements, one element of each cluster is selected in turn
+until the portion is complete.
+}
+}
+
 \examples{
 # can portion vectors, matrices, data.frames, and lists of such types
 portion(
@@ -123,4 +152,7 @@ portion(x, proportion = 0.5, how = "similar", ignore = 2)
 x <- structure(1:10, "test_attribute" = "test")
 x[1:5]
 portion(x, proportion = 0.5, how = "first")
+
+# can portion time series
+portion(stats::ts(1:8, start = 2000), proportion = 0.5, how = "first")
 }

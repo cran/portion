@@ -7,7 +7,7 @@
 \description{
 \if{html}{\figure{logo.png}{options: style='float: right' alt='logo' width='120'}}
 
-Provides simple methods to extract data portions from various objects. The relative portion size and the way the portion is selected can be chosen.
+Extracts a portion of the data in vectors, matrices, data frames, time series, and lists of these objects. The size of the portion is given relative to the size of the object. The portion can consist of the first, the last, random, similar, or dissimilar elements, rows, or columns.
 }
 \seealso{
 Useful links:
